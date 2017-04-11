@@ -1,16 +1,17 @@
 # coding=utf-8
 
 startstring='''    LOGD("++%s",__func__); \n'''
-returnstring='''     LOGD("--%s",__func__);	\n	'''
+returnstring='''     LOGD("--%s",__func__); \n'''
 
 list=['int','int8_t','int16_t','int32_t',
-      'void','fp_image_t','fp_image_t*','static','struct',
+      'void','fp_image_t','fp_image_t*','static','struct','FILE','const',
       'uint','uint8_t','uint16_t','uint32_t',
       'int*','int8_t*','int16_t*','int32_t*',
       'uint*','uint8_t*','uint16_t*','uint32_t*']
 
 s1='('
 s2='{'
+
 testlist=['qwe','rty','uio','asd']
 
 
@@ -53,18 +54,14 @@ def start_location(alllist):
                          break
                 for j in range(30):     # 在大括号那行开始检查每行最左边的非空格字符是否在list里面，如不在则停止查询，插入log
                     b=alllist[l+j].strip().split(' ')
-                    if len(b)>0:
+                    if len(b)>1:
                         if b[0] not in list:
                             l=l+j
                             break
                 alllist.insert(l, startstring)     # 插入开始调用函数的log打印语句
 
     return alllist
-#    for i in alllist:
-#        print(i,end='')
-#    lines=''.join(alllist)
-#    f.write(lines)
-#    f.write('/*--------------------end--------------------*/')
+
 
 def end_location(alllist):
     '''
@@ -107,21 +104,50 @@ def find_all_return(list):
             n.append(l-1)
     return n
 
-def avoid_duplication(list):
-    
+
+def avoid_dup(list):
+    '''
+    一个数组相邻两行去重，防止添加多次log打印
+    :param list:
+    :return:
+    '''
+    m=[]
+    n=len(list)
+    for i in range(n-1):
+        if list[i]==list[i+1]:
+                m.append(i)
+    x=0
+    for j in m:
+        list=list[:j+x]+list[j+x+1:]
+        x-=1
+    return list
+
+def insert_string(list):
+    '''
+    在list输出log语句中插入一个相应的return语句
+    :param string:
+    :return:
+    '''
+    for i in find_all_return(list):
+        ss=list[i].strip()
+        ss = ss[:-1]
+        list[i-1]=list[i-1][:12]+ss+list[i-1][12:]
+    return list
 
 
 if __name__ == '__main__':
-    f = open('/Users/nancy/Documents/个人学习资料/python_loging/testop.c', 'r+')
+    f = open('/Users/nancy/Documents/个人学习资料/python_loging/btlfp_core.c', 'r+')
     al = f.readlines()
     sta=start_location(al)
     en=end_location(sta)
-#    print(en)
 #    print(find_all_return(en))
     for i in find_all_return(en):
         change_return(en,i)
+    en = insert_string(en)
+    en=avoid_dup(en)
 #    for i in en:
 #        print(i,end='')
+#    print(en)
     f.seek(0,0)
     lines = ''.join(en)
     f.write(lines)
